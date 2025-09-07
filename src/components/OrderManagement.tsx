@@ -1,0 +1,617 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Package, 
+  Search, 
+  Filter, 
+  RefreshCw, 
+  Bell, 
+  X, 
+  Info, 
+  CheckCircle, 
+  AlertTriangle, 
+  AlertCircle,
+  Clock,
+  Truck,
+  XCircle,
+  Calendar,
+  MapPin,
+  Hash,
+  DollarSign
+} from 'lucide-react';
+
+// Types
+interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  image: string;
+}
+
+type OrderStatus = 
+  | 'pending'
+  | 'processing' 
+  | 'shipped' 
+  | 'delivered' 
+  | 'cancelled';
+
+interface Order {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  items: OrderItem[];
+  status: OrderStatus;
+  orderDate: string;
+  estimatedDelivery: string;
+  totalAmount: number;
+  shippingAddress: string;
+  trackingNumber?: string;
+}
+
+interface Notification {
+  id: string;
+  orderId: string;
+  message: string;
+  timestamp: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+}
+
+// Mock Data
+const mockOrders: Order[] = [
+  {
+    id: '1',
+    orderNumber: 'SL-2025-001',
+    customerName: 'Sarah Johnson',
+    customerEmail: 'sarah.johnson@email.com',
+    items: [
+      {
+        id: '1',
+        name: 'Premium Business Briefcase',
+        quantity: 1,
+        price: 299.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      },
+      {
+        id: '2',
+        name: 'Leather Laptop Bag',
+        quantity: 1,
+        price: 189.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      }
+    ],
+    status: 'processing',
+    orderDate: '2025-01-09T10:30:00Z',
+    estimatedDelivery: '2025-01-15T00:00:00Z',
+    totalAmount: 489.98,
+    shippingAddress: '123 Business Ave, New York, NY 10001',
+    trackingNumber: 'SL2025001TRACK'
+  },
+  {
+    id: '2',
+    orderNumber: 'SL-2025-002',
+    customerName: 'Michael Chen',
+    customerEmail: 'michael.chen@email.com',
+    items: [
+      {
+        id: '3',
+        name: 'Travel Backpack Pro',
+        quantity: 2,
+        price: 149.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      }
+    ],
+    status: 'shipped',
+    orderDate: '2025-01-08T14:15:00Z',
+    estimatedDelivery: '2025-01-12T00:00:00Z',
+    totalAmount: 299.98,
+    shippingAddress: '456 Adventure St, Los Angeles, CA 90210',
+    trackingNumber: 'SL2025002TRACK'
+  },
+  {
+    id: '3',
+    orderNumber: 'SL-2025-003',
+    customerName: 'Emma Williams',
+    customerEmail: 'emma.williams@email.com',
+    items: [
+      {
+        id: '4',
+        name: 'Designer Handbag Collection',
+        quantity: 1,
+        price: 399.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      }
+    ],
+    status: 'delivered',
+    orderDate: '2025-01-05T09:00:00Z',
+    estimatedDelivery: '2025-01-10T00:00:00Z',
+    totalAmount: 399.99,
+    shippingAddress: '789 Fashion Blvd, Miami, FL 33101',
+    trackingNumber: 'SL2025003TRACK'
+  },
+  {
+    id: '4',
+    orderNumber: 'SL-2025-004',
+    customerName: 'James Rodriguez',
+    customerEmail: 'james.rodriguez@email.com',
+    items: [
+      {
+        id: '5',
+        name: 'Sports Duffel Bag',
+        quantity: 1,
+        price: 89.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      },
+      {
+        id: '6',
+        name: 'Gym Equipment Bag',
+        quantity: 1,
+        price: 69.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      }
+    ],
+    status: 'pending',
+    orderDate: '2025-01-09T16:45:00Z',
+    estimatedDelivery: '2025-01-16T00:00:00Z',
+    totalAmount: 159.98,
+    shippingAddress: '321 Sports Center Dr, Chicago, IL 60601'
+  },
+  {
+    id: '5',
+    orderNumber: 'SL-2025-005',
+    customerName: 'Lisa Thompson',
+    customerEmail: 'lisa.thompson@email.com',
+    items: [
+      {
+        id: '7',
+        name: 'Executive Briefcase Set',
+        quantity: 1,
+        price: 599.99,
+        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+      }
+    ],
+    status: 'cancelled',
+    orderDate: '2025-01-07T11:20:00Z',
+    estimatedDelivery: '2025-01-14T00:00:00Z',
+    totalAmount: 599.99,
+    shippingAddress: '654 Executive Plaza, Boston, MA 02101'
+  }
+];
+
+export const OrderManagement: React.FC = () => {
+  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  // Status configuration
+  const statusConfig = {
+    pending: {
+      icon: Clock,
+      label: 'Pending',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
+    },
+    processing: {
+      icon: Package,
+      label: 'Processing',
+      bgColor: 'bg-gray-800',
+      textColor: 'text-white',
+      iconColor: 'text-white'
+    },
+    shipped: {
+      icon: Truck,
+      label: 'Shipped',
+      bgColor: 'bg-gray-600',
+      textColor: 'text-white',
+      iconColor: 'text-white'
+    },
+    delivered: {
+      icon: CheckCircle,
+      label: 'Delivered',
+      bgColor: 'bg-black',
+      textColor: 'text-white',
+      iconColor: 'text-white'
+    },
+    cancelled: {
+      icon: XCircle,
+      label: 'Cancelled',
+      bgColor: 'bg-gray-300',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
+    }
+  };
+
+  const notificationIcons = {
+    info: Info,
+    success: CheckCircle,
+    warning: AlertTriangle,
+    error: AlertCircle
+  };
+
+  const notificationStyles = {
+    info: 'bg-gray-100 border-gray-300 text-gray-800',
+    success: 'bg-black text-white border-gray-800',
+    warning: 'bg-gray-800 text-white border-gray-600',
+    error: 'bg-gray-600 text-white border-gray-400'
+  };
+
+  // Simulate real-time order status updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const randomOrderIndex = Math.floor(Math.random() * orders.length);
+      const currentOrder = orders[randomOrderIndex];
+      
+      if (currentOrder && Math.random() > 0.8) { // 20% chance to update
+        const possibleStatuses: OrderStatus[] = ['processing', 'shipped', 'delivered'];
+        const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
+        
+        if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
+          const newStatus = possibleStatuses[currentStatusIndex + 1];
+          updateOrderStatus(currentOrder.id, newStatus);
+        }
+      }
+    }, 8000); // Check every 8 seconds
+
+    return () => clearInterval(interval);
+  }, [orders]);
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      setIsNotificationOpen(true);
+    }
+  }, [notifications]);
+
+  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
+    setOrders(prevOrders => 
+      prevOrders.map(order => 
+        order.id === orderId 
+          ? { ...order, status: newStatus }
+          : order
+      )
+    );
+
+    // Create notification
+    const order = orders.find(o => o.id === orderId);
+    if (order) {
+      const newNotification: Notification = {
+        id: `${orderId}-${Date.now()}`,
+        orderId,
+        message: `Order ${order.orderNumber} status updated to ${newStatus.toUpperCase()}`,
+        timestamp: new Date().toISOString(),
+        type: newStatus === 'delivered' ? 'success' : 'info'
+      };
+
+      setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep only 5 latest
+    }
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+    }, 1000);
+  };
+
+  const dismissNotification = (notificationId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notificationId));
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatTime = (timestamp: string) => {
+    return new Date(timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount);
+  };
+
+  const filteredOrders = orders.filter(order => {
+    const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
+type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+
+const getStatusCounts = (): Record<OrderStatus, number> & { total: number } => {
+  const initialCounts: Record<OrderStatus, number> = {
+    pending: 0,
+    processing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+  };
+
+  const counts = orders.reduce((acc, order) => {
+    acc[order.status] = (acc[order.status] || 0) + 1;
+    return acc;
+  }, { ...initialCounts });
+
+  return {
+    total: orders.length,
+    ...counts,
+  };
+};
+
+const statusCounts = getStatusCounts();
+
+
+  // Order Status Component
+  const OrderStatusBadge: React.FC<{ status: OrderStatus; className?: string }> = ({ status, className = '' }) => {
+    const config = statusConfig[status];
+    const Icon = config.icon;
+
+    return (
+      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 ${config.bgColor} ${config.textColor} ${className}`}>
+        <Icon size={16} className={config.iconColor} />
+        <span className="text-sm font-medium">{config.label}</span>
+      </div>
+    );
+  };
+
+  // Order Card Component
+  const OrderCard: React.FC<{ order: Order }> = ({ order }) => {
+    return (
+      <div className="bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-gray-400 transition-all duration-200">
+        {/* Header */}
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Hash size={16} className="text-gray-600" />
+              <h3 className="text-lg font-bold text-black">{order.orderNumber}</h3>
+            </div>
+            <p className="text-gray-600">{order.customerName}</p>
+          </div>
+          <OrderStatusBadge status={order.status} />
+        </div>
+
+        {/* Order Items */}
+        <div className="mb-4">
+          <h4 className="font-semibold text-black mb-2">Items:</h4>
+          <div className="space-y-2">
+            {order.items.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded border">
+                <img 
+                  src={item.image} 
+                  alt={item.name}
+                  className="w-12 h-12 object-cover rounded border"
+                />
+                <div className="flex-1">
+                  <p className="font-medium text-black">{item.name}</p>
+                  <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                </div>
+                <p className="font-semibold text-black">{formatCurrency(item.price)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Order Details */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center gap-2 text-gray-600">
+            <Calendar size={16} />
+            <span className="text-sm">Ordered: {formatDate(order.orderDate)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <Calendar size={16} />
+            <span className="text-sm">Est. Delivery: {formatDate(order.estimatedDelivery)}</span>
+          </div>
+          <div className="flex items-center gap-2 text-gray-600">
+            <MapPin size={16} />
+            <span className="text-sm">{order.shippingAddress}</span>
+          </div>
+          <div className="flex items-center gap-2 text-black">
+            <DollarSign size={16} />
+            <span className="text-sm font-semibold">Total: {formatCurrency(order.totalAmount)}</span>
+          </div>
+        </div>
+
+        {/* Tracking Number */}
+        {order.trackingNumber && (
+          <div className="bg-gray-100 p-3 rounded border">
+            <p className="text-sm text-gray-600">
+              <span className="font-medium">Tracking Number:</span> {order.trackingNumber}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b-2 border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div className="flex items-center gap-3">
+              <div className="bg-black p-2 rounded-lg">
+                <Package size={24} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-black">SwiftLogistic</h1>
+                <p className="text-gray-600">Order Management System</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg bg-white hover:border-gray-400 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={`text-gray-700 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span className="text-gray-700">Refresh</span>
+              </button>
+              
+              {/* Notification System */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  className="relative p-2 border-2 border-gray-300 rounded-lg bg-white hover:border-gray-400 transition-colors"
+                >
+                  <Bell size={20} className="text-gray-700" />
+                  {notifications.length > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-black text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {notifications.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notification Panel */}
+                {isNotificationOpen && (
+                  <div className="absolute top-14 right-0 w-96 max-h-80 bg-white border-2 border-gray-300 rounded-lg shadow-lg overflow-hidden z-50">
+                    <div className="bg-gray-100 p-3 border-b border-gray-300">
+                      <div className="flex justify-between items-center">
+                        <h3 className="font-semibold text-black">Order Updates</h3>
+                        <button
+                          onClick={() => setIsNotificationOpen(false)}
+                          className="p-1 hover:bg-gray-200 rounded"
+                        >
+                          <X size={16} className="text-gray-600" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">
+                          No new notifications
+                        </div>
+                      ) : (
+                        notifications.map((notification) => {
+                          const Icon = notificationIcons[notification.type];
+                          return (
+                            <div
+                              key={notification.id}
+                              className={`p-4 border-b border-gray-200 ${notificationStyles[notification.type]} relative group`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <Icon size={16} className="mt-1" />
+                                <div className="flex-1">
+                                  <p className="text-sm">{notification.message}</p>
+                                  <p className="text-xs opacity-75 mt-1">
+                                    {formatTime(notification.timestamp)}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => dismissNotification(notification.id)}
+                                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-black hover:bg-opacity-20 rounded"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Total Orders</p>
+            <p className="text-2xl font-bold text-black">{statusCounts.total || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Pending</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts.pending || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Processing</p>
+            <p className="text-2xl font-bold text-black">{statusCounts.processing || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Shipped</p>
+            <p className="text-2xl font-bold text-gray-700">{statusCounts.shipped || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Delivered</p>
+            <p className="text-2xl font-bold text-black">{statusCounts.delivered || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Cancelled</p>
+            <p className="text-2xl font-bold text-gray-500">{statusCounts.cancelled || 0}</p>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white p-6 rounded-lg border-2 border-gray-200 mb-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-600" />
+                <input
+                  type="text"
+                  placeholder="Search by order number or customer name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-300 rounded-lg focus:border-gray-500 focus:outline-none"
+                />
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Filter size={20} className="text-gray-600" />
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as OrderStatus | 'all')}
+                className="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-gray-500 focus:outline-none bg-white"
+              >
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Orders List */}
+        <div className="space-y-6">
+          {filteredOrders.length === 0 ? (
+            <div className="bg-white p-12 rounded-lg border-2 border-gray-200 text-center">
+              <Package size={48} className="mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No orders found</h3>
+              <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+            </div>
+          ) : (
+            filteredOrders.map((order) => (
+              <OrderCard key={order.id} order={order} />
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
