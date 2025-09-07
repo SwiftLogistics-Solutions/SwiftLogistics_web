@@ -1,8 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Filter, Grid, List, ShoppingBag } from 'lucide-react';
+import { Filter, Grid, List, ShoppingBag,Gift } from 'lucide-react';
 import { ProductCard } from './ProductCard';
+import { useNavigate } from 'react-router-dom';
 
 export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('name');
@@ -54,8 +56,11 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
           <p className="text-gray-600">Discover our curated selection of high-quality bags</p>
         </div>
 
+        {/* Filters + Order button + Sorting */}
         <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8 shadow-sm">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+            
+            {/* Left side - filters */}
             <div className="flex items-center space-x-2">
               <Filter className="h-5 w-5 text-gray-500" />
               <span className="text-sm font-medium text-black">Category:</span>
@@ -76,36 +81,59 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
               </div>
             </div>
 
-            <div className="flex items-center space-x-4">
-              <select
-                value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
-              >
-                <option value="name">Sort by Name</option>
-                <option value="price-low">Price: Low to High</option>
-                <option value="price-high">Price: High to Low</option>
-                <option value="quantity">Most Available</option>
-              </select>
+            {/* Right side - controls */}
+           <div className="flex items-center space-x-4">
+  {/* Order Management button */}
+  <button
+    onClick={() => navigate('/ordermanagement')}
+    className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg shadow-sm hover:bg-gray-800 transition-colors duration-200"
+  >
+    <ShoppingBag className="h-5 w-5 mr-2" />
+    Order Management
+  </button>
 
-              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 transition-colors duration-200 ${viewMode === 'grid' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <Grid className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 transition-colors duration-200 ${viewMode === 'list' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
-                >
-                  <List className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
+  {/* Promotion button */}
+  <button
+    onClick={() => navigate('/promotions')}
+    className="inline-flex items-center px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-pink-600 transition-colors duration-200"
+  >
+    <Gift className="h-5 w-5 mr-2" />
+    Promotions
+  </button>
+
+  {/* Sort dropdown */}
+  <select
+    value={sortBy}
+    onChange={e => setSortBy(e.target.value)}
+    className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black focus:border-black"
+  >
+    <option value="name">Sort by Name</option>
+    <option value="price-low">Price: Low to High</option>
+    <option value="price-high">Price: High to Low</option>
+    <option value="quantity">Most Available</option>
+  </select>
+
+  {/* Grid / List toggle */}
+  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+    <button
+      onClick={() => setViewMode('grid')}
+      className={`p-2 transition-colors duration-200 ${viewMode === 'grid' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+    >
+      <Grid className="h-4 w-4" />
+    </button>
+    <button
+      onClick={() => setViewMode('list')}
+      className={`p-2 transition-colors duration-200 ${viewMode === 'list' ? 'bg-black text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+    >
+      <List className="h-4 w-4" />
+    </button>
+  </div>
+</div>
+
           </div>
         </div>
 
+        {/* Product count */}
         <div className="mb-6">
           <p className="text-gray-600">
             Showing {filteredProducts.length} of {mockProducts.length} bags
@@ -113,6 +141,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
           </p>
         </div>
 
+        {/* Product grid / list */}
         {filteredProducts.length > 0 ? (
           <div className={`grid gap-6 ${viewMode === 'grid' ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' : 'grid-cols-1'}`}>
             {filteredProducts.map(product => <ProductCard key={product.id} product={product} />)}

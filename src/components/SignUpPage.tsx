@@ -70,7 +70,7 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center px-4">
+    <div className="min-h-screen bg-white flex items-center justify-center px-4">
       <div className="max-w-md w-full">
         {/* Logo Section */}
         <div className="text-center mb-8">
@@ -79,8 +79,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
               <ShoppingBag className="h-8 w-8 text-black" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white">Join BagMarket</h1>
-          <p className="text-gray-300 mt-2">Create your account to start shopping</p>
+          <h1 className="text-3xl font-bold text-black">Join SwiftLogistics</h1>
+          <p className="text-gray-600 mt-2">Create your account to start shopping</p>
         </div>
 
         {/* Sign Up Form */}

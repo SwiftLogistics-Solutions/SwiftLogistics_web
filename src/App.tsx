@@ -4,6 +4,8 @@ import { LoginPage } from './components/LoginPage';
 import { SignUpPage } from './components/SignUpPage';
 import { Dashboard } from './components/Dashboard';
 import { Header } from './components/Header';
+import { OrderManagement } from './components/OrderManagement';
+import { PromotionsPage } from './components/PromotionsPage';
 
 type User = {
   id: string;
@@ -103,6 +105,8 @@ function AppRoutes({
         ) : (
           <>
             <Route path="/dashboard" element={<Dashboard searchTerm={searchTerm} />} />
+            <Route path="/ordermanagement" element={<OrderManagement />} />
+            <Route path="/promotions" element={<PromotionsPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </>
         )}
