@@ -33,7 +33,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToSignUp 
               <ShoppingBag className="h-8 w-8 text-white" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-black">BagMarket</h1>
+          <h1 className="text-3xl font-bold text-black">SwiftLogistics</h1>
           <p className="text-gray-600 mt-2">Sign in to discover premium bags</p>
         </div>
 
