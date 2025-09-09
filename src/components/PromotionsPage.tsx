@@ -391,7 +391,7 @@ export const PromotionsPage: React.FC = () => {
         )}
 
         {/* Actions */}
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <button className="flex items-center gap-2 px-3 py-2 border-2 border-gray-300 rounded-lg bg-white hover:border-gray-400 transition-colors text-sm">
             <Edit size={14} />
             Edit
@@ -404,7 +404,7 @@ export const PromotionsPage: React.FC = () => {
             <Trash2 size={14} />
             Delete
           </button>
-        </div>
+        </div> */}
       </div>
     );
   };
@@ -425,10 +425,10 @@ export const PromotionsPage: React.FC = () => {
               </div>
             </div>
             
-            <button className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
+            {/* <button className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors">
               <Plus size={16} />
               <span>Create Promotion</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
