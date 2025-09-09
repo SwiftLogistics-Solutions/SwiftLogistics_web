@@ -84,7 +84,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
               {/* Promotion button */}
               <button
                 onClick={() => navigate('/promotions')}
-                className="inline-flex items-center px-4 py-2 bg-pink-500 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-pink-600 transition-colors duration-200"
+                className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg shadow-sm hover:bg-gray-800 transition-colors duration-200"
               >
                 <Gift className="h-5 w-5 mr-2" />
                 Promotions
@@ -93,7 +93,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
               {/* Cart button */}
               <button
                 onClick={() => navigate('/cart')}
-                className="inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg shadow-sm hover:bg-blue-600 transition-colors duration-200"
+                className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg shadow-sm hover:bg-gray-800 transition-colors duration-200"
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
                 Cart
