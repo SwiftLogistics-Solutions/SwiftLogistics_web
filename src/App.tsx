@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { LoginPage } from './components/LoginPage';
 import { SignUpPage } from './components/SignUpPage';
@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { OrderManagement } from './components/OrderManagement';
 import { PromotionsPage } from './components/PromotionsPage';
 import CartPage from './components/CartPage';
+import { CartProvider } from './context/CartContext';
 
 type User = {
   id: string;
@@ -27,13 +28,65 @@ function App() {
 
   const [searchTerm, setSearchTerm] = useState<string>('');
 
+  // Check for existing authentication on app load
+  useEffect(() => {
+    const userData = localStorage.getItem('userData');
+    const authToken = localStorage.getItem('authToken');
+    
+    if (userData && authToken) {
+      try {
+        const user = JSON.parse(userData);
+        setAuthState({
+          user: {
+            id: user.uid || user.id,
+            email: user.email,
+            name: user.name || user.email.split('@')[0],
+          },
+          isAuthenticated: true,
+        });
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('userData');
+        localStorage.removeItem('authToken');
+      }
+    }
+  }, []);
+
   const handleLogin = (email: string, password: string) => {
-    const user: User = {
-      id: '1',
-      email,
-      name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
-    };
-    setAuthState({ user, isAuthenticated: true });
+    // This function is called after successful API login from LoginPage
+    // The user data should already be stored in localStorage by LoginPage
+    const userData = localStorage.getItem('userData');
+    
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setAuthState({
+          user: {
+            id: user.uid || user.id,
+            email: user.email,
+            name: user.name || email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+          },
+          isAuthenticated: true,
+        });
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        // Fallback to basic user object
+        const user: User = {
+          id: '1',
+          email,
+          name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+        };
+        setAuthState({ user, isAuthenticated: true });
+      }
+    } else {
+      // Fallback if no stored data
+      const user: User = {
+        id: '1',
+        email,
+        name: email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1),
+      };
+      setAuthState({ user, isAuthenticated: true });
+    }
   };
 
   const handleSignUp = (email: string, password: string, name: string) => {
@@ -41,24 +94,58 @@ function App() {
     setAuthState({ user, isAuthenticated: true });
   };
 
-  const handleLogout = () => {
-    setAuthState({ user: null, isAuthenticated: false });
-    setSearchTerm('');
+  const handleLogout = async () => {
+    try {
+      // Get user data and token from localStorage
+      const userData = localStorage.getItem('userData');
+      const authToken = localStorage.getItem('authToken');
+      if (userData && authToken) {
+        const user = JSON.parse(userData);
+        
+        // Call logout API
+        await fetch('/auth/logout', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: user.uid,
+            idToken: authToken,
+          }),
+        
+        });
+      }
+      
+      // Clear local storage and update state regardless of API response
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      setAuthState({ user: null, isAuthenticated: false });
+      setSearchTerm('');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Still log out locally even if API call fails
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userData');
+      setAuthState({ user: null, isAuthenticated: false });
+      setSearchTerm('');
+    }
   };
 
   const handleSearchChange = (term: string) => setSearchTerm(term);
 
   return (
-    <Router>
-      <AppRoutes
-        authState={authState}
-        handleLogin={handleLogin}
-        handleSignUp={handleSignUp}
-        handleLogout={handleLogout}
-        searchTerm={searchTerm}
-        handleSearchChange={handleSearchChange}
-      />
-    </Router>
+    <CartProvider>
+      <Router>
+        <AppRoutes
+          authState={authState}
+          handleLogin={handleLogin}
+          handleSignUp={handleSignUp}
+          handleLogout={handleLogout}
+          searchTerm={searchTerm}
+          handleSearchChange={handleSearchChange}
+        />
+      </Router>
+    </CartProvider>
   );
 }
 

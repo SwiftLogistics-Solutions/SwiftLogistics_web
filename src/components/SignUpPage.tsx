@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingBag, Mail, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { ShoppingBag, Mail, Lock, Eye, EyeOff, User, Phone, MapPin } from 'lucide-react';
 
 interface SignUpPageProps {
   onSignUp: (email: string, password: string, name: string) => void;
@@ -10,6 +10,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
+    address: '',
     password: '',
     confirmPassword: ''
   });
@@ -29,6 +31,16 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Please enter a valid email';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\D/g, ''))) {
+      newErrors.phone = 'Phone number must be exactly 10 digits';
+    }
+
+    if (!formData.address.trim()) {
+      newErrors.address = 'Address is required';
     }
 
     if (!formData.password) {
@@ -54,15 +66,64 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
 
     setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      onSignUp(formData.email, formData.password, formData.name);
+    try {
+      const response = await fetch('/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phone: formData.phone,
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          confirmPassword: formData.confirmPassword,
+          address: formData.address,
+          role: 'customer'
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Store the token and user data if provided
+        if (data.token) {
+          localStorage.setItem('authToken', data.token);
+        }
+        if (data.user) {
+          localStorage.setItem('userData', JSON.stringify(data.user));
+        }
+        
+        onSignUp(formData.email, formData.password, formData.name);
+      } else {
+        // Handle signup errors
+        if (data.errors && Array.isArray(data.errors)) {
+          // Handle validation errors from backend
+          const backendErrors: Record<string, string> = {};
+          data.errors.forEach((error: any) => {
+            if (error.field) {
+              backendErrors[error.field] = error.message;
+            }
+          });
+          setErrors(backendErrors);
+        } else {
+          setErrors({ general: data.message || 'Signup failed. Please try again.' });
+        }
+      }
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let processedValue = value;
+    
+    // Special handling for phone number - only allow digits and limit to 10
+    if (field === 'phone') {
+      processedValue = value.replace(/\D/g, '').slice(0, 10);
+    }
+    
+    setFormData(prev => ({ ...prev, [field]: processedValue }));
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -85,6 +146,11 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
 
         {/* Sign Up Form */}
         <div className="bg-white border-2 border-white rounded-2xl shadow-2xl p-8">
+          {errors.general && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{errors.general}</p>
+            </div>
+          )}
           <div className="space-y-6">
             {/* Name Field */}
             <div>
@@ -133,6 +199,56 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
               </div>
               {errors.email && (
                 <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+              )}
+            </div>
+
+            {/* Phone Number Field */}
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-black mb-2">
+                Phone Number
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-600" />
+                </div>
+                <input
+                  id="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-0 focus:border-black transition-colors duration-200 text-black placeholder-gray-500 bg-white ${
+                    errors.phone ? 'border-red-500' : 'border-gray-400'
+                  }`}
+                  placeholder="Enter your phone number"
+                />
+              </div>
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+              )}
+            </div>
+
+            {/* Address Field */}
+            <div>
+              <label htmlFor="address" className="block text-sm font-medium text-black mb-2">
+                Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MapPin className="h-5 w-5 text-gray-600" />
+                </div>
+                <input
+                  id="address"
+                  type="text"
+                  value={formData.address}
+                  onChange={(e) => handleInputChange('address', e.target.value)}
+                  className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-0 focus:border-black transition-colors duration-200 text-black placeholder-gray-500 bg-white ${
+                    errors.address ? 'border-red-500' : 'border-gray-400'
+                  }`}
+                  placeholder="Enter your address"
+                />
+              </div>
+              {errors.address && (
+                <p className="mt-1 text-sm text-red-600">{errors.address}</p>
               )}
             </div>
 
@@ -200,26 +316,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
               )}
             </div>
 
-            {/* Terms and Conditions */}
-            <div className="flex items-start">
-              <input
-                type="checkbox"
-                id="terms"
-                required
-                className="h-4 w-4 text-black focus:ring-black border-gray-400 rounded mt-1 bg-white"
-              />
-              <label htmlFor="terms" className="ml-2 text-sm text-gray-700">
-                I agree to the{' '}
-                <button type="button" className="text-black hover:text-gray-600 transition-colors duration-200 font-medium underline">
-                  Terms of Service
-                </button>{' '}
-                and{' '}
-                <button type="button" className="text-black hover:text-gray-600 transition-colors duration-200 font-medium underline">
-                  Privacy Policy
-                </button>
-              </label>
-            </div>
-
             <button
               onClick={handleSubmit}
               disabled={isLoading}
@@ -247,13 +343,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
               </button>
             </p>
           </div>
-        </div>
-
-        {/* Additional Info */}
-        <div className="mt-6 p-4 bg-white rounded-lg border-2 border-white">
-          <p className="text-xs text-gray-700 text-center">
-            <strong className="text-black">Demo:</strong> Fill out the form to create your account
-          </p>
         </div>
       </div>
     </div>
