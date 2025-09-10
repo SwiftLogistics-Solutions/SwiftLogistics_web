@@ -30,7 +30,22 @@ function CartPage() {
                 const orderID = `O${Date.now()}`;
                 
                 // Get customer ID from localStorage (assuming it was stored during login)
-                const customerId = localStorage.getItem('customerId') || 'CMFCSQ5YR2M7Y0Q';
+                const userData = localStorage.getItem('userData');
+                let customerId = null;
+
+                if (userData) {
+                    try {
+                        const user = JSON.parse(userData);
+                        customerId = user.customer_id || user.uid || user.id;
+                    } catch (parseError) {
+                        console.error('Error parsing user data:', parseError);
+                    }
+                }
+
+                if (!customerId) {
+                    alert('Customer ID not found. Please log in again.');
+                    return;
+                }
 
                 // Create order payload
                 const orderPayload = {
