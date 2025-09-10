@@ -15,6 +15,11 @@ interface Product {
   quantity: number;
   createdAt: string;
   updatedAt: string;
+  originalPrice?: number;
+  discountedPrice?: number;
+  hasDiscount?: boolean;
+  discountPercentage?: number;
+  offerCode?: string;
 }
 
 export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
@@ -23,6 +28,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
+  const [offers, setOffers] = useState<any[]>([]);
 
   // Dynamically generate categories from products
   const categories = useMemo(() => {
@@ -32,29 +38,95 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
     return ['all', ...uniqueCategories.sort()];
   }, [products]);
 
-  // Fetch products from API
+  // Function to apply discounts to products
+  const applyDiscounts = (products: Product[], offers: any[]) => {
+    return products.map(product => {
+      // Find applicable active offers
+      const applicableOffer = offers.find(offer => 
+        offer.status === 'active' && 
+        (offer.applicableProducts.includes('All Products') || 
+         offer.applicableProducts.includes(product.name) ||
+         offer.applicableProducts.includes(product.category))
+      );
+
+      if (applicableOffer) {
+        let discountedPrice = product.price;
+        
+        if (applicableOffer.type === 'percentage') {
+          discountedPrice = product.price * (1 - applicableOffer.value / 100);
+        } else if (applicableOffer.type === 'fixed_amount') {
+          discountedPrice = Math.max(0, product.price - applicableOffer.value);
+        }
+
+        return {
+          ...product,
+          originalPrice: product.price,
+          discountedPrice: discountedPrice,
+          hasDiscount: true,
+          discountPercentage: applicableOffer.type === 'percentage' ? applicableOffer.value : Math.round(((product.price - discountedPrice) / product.price) * 100),
+          offerCode: applicableOffer.code
+        };
+      }
+
+      return { ...product, hasDiscount: false };
+    });
+  };
+
+  // Fetch products and offers from API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchProductsAndOffers = async () => {
       try {
         setLoading(true);
         setError('');
         
-        const response = await fetch('/product');
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+        // Fetch products
+        const productsResponse = await fetch('/product');
+        if (!productsResponse.ok) {
+          throw new Error(`HTTP error! status: ${productsResponse.status}`);
         }
-        
-        const data = await response.json();
+        const productsData = await productsResponse.json();
         
         // Map API response to match expected format
-        const mappedProducts = data.products.map((product: any) => ({
+        const mappedProducts = productsData.products.map((product: any) => ({
           ...product,
           id: product._id, // Map _id to id for consistency
           quantity: product.stock // Map stock to quantity for consistency
         }));
+
+        // Fetch offers
+        let offersData = [];
+        try {
+          const offersResponse = await fetch('/product/offers', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+            }
+          });
+          if (offersResponse.ok) {
+            const rawOffersData = await offersResponse.json();
+            const rawOffers = Array.isArray(rawOffersData) ? rawOffersData : (rawOffersData.offers || rawOffersData.data || []);
+            
+            // Transform offers data
+            offersData = rawOffers.map((item: any, index: number) => ({
+              id: item.id || `offer-${index}`,
+              name: item.name || item.title || 'Unnamed Offer',
+              type: (item.type && ['percentage', 'fixed_amount'].includes(item.type)) ? item.type : 'percentage',
+              value: typeof item.value === 'number' ? item.value : (item.discount || 0),
+              code: item.code || item.couponCode || `CODE${index}`,
+              status: (item.status && ['active', 'expired'].includes(item.status)) ? item.status : 'active',
+              applicableProducts: Array.isArray(item.applicableProducts) ? item.applicableProducts : 
+                                 (Array.isArray(item.applicable_products) ? item.applicable_products : ['All Products'])
+            }));
+          }
+        } catch (offerError) {
+          console.log('Could not fetch offers, continuing without discounts');
+        }
+
+        setOffers(offersData);
         
-        setProducts(mappedProducts);
+        // Apply discounts to products
+        const productsWithDiscounts = applyDiscounts(mappedProducts, offersData);
+        setProducts(productsWithDiscounts);
+        
       } catch (error) {
         console.error('Error fetching products:', error);
         setError('Failed to load products. Please try again later.');
@@ -63,7 +135,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
       }
     };
 
-    fetchProducts();
+    fetchProductsAndOffers();
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -124,7 +196,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
                 className="inline-flex items-center px-4 py-2 bg-black text-white text-sm font-medium rounded-lg shadow-sm hover:bg-gray-800 transition-colors duration-200"
               >
                 <ShoppingBag className="h-5 w-5 mr-2" />
-                Order Management
+                My Orders
               </button>
 
               {/* Promotion button */}

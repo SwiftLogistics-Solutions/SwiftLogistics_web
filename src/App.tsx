@@ -7,6 +7,7 @@ import { Header } from './components/Header';
 import { OrderManagement } from './components/OrderManagement';
 import { PromotionsPage } from './components/PromotionsPage';
 import CartPage from './components/CartPage';
+import { CartProvider } from './context/CartContext';
 
 type User = {
   id: string;
@@ -133,16 +134,18 @@ function App() {
   const handleSearchChange = (term: string) => setSearchTerm(term);
 
   return (
-    <Router>
-      <AppRoutes
-        authState={authState}
-        handleLogin={handleLogin}
-        handleSignUp={handleSignUp}
-        handleLogout={handleLogout}
-        searchTerm={searchTerm}
-        handleSearchChange={handleSearchChange}
-      />
-    </Router>
+    <CartProvider>
+      <Router>
+        <AppRoutes
+          authState={authState}
+          handleLogin={handleLogin}
+          handleSignUp={handleSignUp}
+          handleLogout={handleLogout}
+          searchTerm={searchTerm}
+          handleSearchChange={handleSearchChange}
+        />
+      </Router>
+    </CartProvider>
   );
 }
 
