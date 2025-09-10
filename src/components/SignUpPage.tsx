@@ -110,9 +110,6 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
           setErrors({ general: data.message || 'Signup failed. Please try again.' });
         }
       }
-    } catch (error) {
-      console.error('Signup error:', error);
-      setErrors({ general: 'Network error. Please check your connection and try again.' });
     } finally {
       setIsLoading(false);
     }

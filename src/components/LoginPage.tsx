@@ -33,23 +33,42 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToSignUp 
       const data = await response.json();
 
       if (response.ok) {
+        // Validate that we have user data
+        if (!data.user) {
+          setError('Invalid response from server. Please try again.');
+          return;
+        }
+
         // Check if user role is 'customer'
-        if (data.user && data.user.customClaims.role !== 'customer') {
+        if (data.user.customClaims && data.user.customClaims.role !== 'customer') {
           setError('Access denied. This portal is only for customers.');
           return;
         }
         
-        // Store the token and user data if provided
-        if (data.token) {
-          localStorage.setItem('authToken', data.token);
+        // Validate that we have authentication token
+        const token = data.idToken || data.token;
+        if (!token) {
+          setError('Authentication failed. No token received.');
+          return;
         }
-        if (data.user) {
-          localStorage.setItem('userData', JSON.stringify(data.user));
-          localStorage.setItem('authToken', JSON.stringify(data.idToken));
-        }
+        
+        // Store the token and user data
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        
+        // Only proceed to login if all validations pass
         onLogin(email, password);
       } else {
-        setError(data.message || 'Login failed. Please check your credentials.');
+        // Handle different types of API errors
+        if (response.status === 401) {
+          setError('Invalid email or password. Please try again.');
+        } else if (response.status === 403) {
+          setError('Access forbidden. Please contact support.');
+        } else if (response.status >= 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError(data.message || 'Login failed. Please check your credentials.');
+        }
       }
     } catch (error) {
       console.error('Login error:', error);

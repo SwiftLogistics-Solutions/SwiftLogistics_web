@@ -39,7 +39,7 @@ export const Dashboard = ({ searchTerm }: { searchTerm: string }) => {
         setLoading(true);
         setError('');
         
-        const response = await fetch('http://localhost:5999/api/products');
+        const response = await fetch('/product');
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
