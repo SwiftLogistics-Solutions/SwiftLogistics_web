@@ -30,10 +30,9 @@ interface OrderItem {
 
 type OrderStatus = 
   | 'pending'
-  | 'processing' 
-  | 'shipped' 
-  | 'delivered' 
-  | 'cancelled';
+  | 'ready-to-deliver' 
+  | 'on-delivery' 
+  | 'delivered';
 
 interface Order {
   id: string;
@@ -57,127 +56,6 @@ interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
 }
 
-// Mock Data
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    orderNumber: 'SL-2025-001',
-    customerName: 'Sarah Johnson',
-    customerEmail: 'sarah.johnson@email.com',
-    items: [
-      {
-        id: '1',
-        name: 'Premium Business Briefcase',
-        quantity: 1,
-        price: 299.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      },
-      {
-        id: '2',
-        name: 'Leather Laptop Bag',
-        quantity: 1,
-        price: 189.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'processing',
-    orderDate: '2025-01-09T10:30:00Z',
-    estimatedDelivery: '2025-01-15T00:00:00Z',
-    totalAmount: 489.98,
-    shippingAddress: '123 Business Ave, New York, NY 10001',
-    trackingNumber: 'SL2025001TRACK'
-  },
-  {
-    id: '2',
-    orderNumber: 'SL-2025-002',
-    customerName: 'Michael Chen',
-    customerEmail: 'michael.chen@email.com',
-    items: [
-      {
-        id: '3',
-        name: 'Travel Backpack Pro',
-        quantity: 2,
-        price: 149.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'shipped',
-    orderDate: '2025-01-08T14:15:00Z',
-    estimatedDelivery: '2025-01-12T00:00:00Z',
-    totalAmount: 299.98,
-    shippingAddress: '456 Adventure St, Los Angeles, CA 90210',
-    trackingNumber: 'SL2025002TRACK'
-  },
-  {
-    id: '3',
-    orderNumber: 'SL-2025-003',
-    customerName: 'Emma Williams',
-    customerEmail: 'emma.williams@email.com',
-    items: [
-      {
-        id: '4',
-        name: 'Designer Handbag Collection',
-        quantity: 1,
-        price: 399.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'delivered',
-    orderDate: '2025-01-05T09:00:00Z',
-    estimatedDelivery: '2025-01-10T00:00:00Z',
-    totalAmount: 399.99,
-    shippingAddress: '789 Fashion Blvd, Miami, FL 33101',
-    trackingNumber: 'SL2025003TRACK'
-  },
-  {
-    id: '4',
-    orderNumber: 'SL-2025-004',
-    customerName: 'James Rodriguez',
-    customerEmail: 'james.rodriguez@email.com',
-    items: [
-      {
-        id: '5',
-        name: 'Sports Duffel Bag',
-        quantity: 1,
-        price: 89.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      },
-      {
-        id: '6',
-        name: 'Gym Equipment Bag',
-        quantity: 1,
-        price: 69.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'pending',
-    orderDate: '2025-01-09T16:45:00Z',
-    estimatedDelivery: '2025-01-16T00:00:00Z',
-    totalAmount: 159.98,
-    shippingAddress: '321 Sports Center Dr, Chicago, IL 60601'
-  },
-  {
-    id: '5',
-    orderNumber: 'SL-2025-005',
-    customerName: 'Lisa Thompson',
-    customerEmail: 'lisa.thompson@email.com',
-    items: [
-      {
-        id: '7',
-        name: 'Executive Briefcase Set',
-        quantity: 1,
-        price: 599.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'cancelled',
-    orderDate: '2025-01-07T11:20:00Z',
-    estimatedDelivery: '2025-01-14T00:00:00Z',
-    totalAmount: 599.99,
-    shippingAddress: '654 Executive Plaza, Boston, MA 02101'
-  }
-];
-
 export const OrderManagement: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -197,31 +75,24 @@ export const OrderManagement: React.FC = () => {
       textColor: 'text-gray-800',
       iconColor: 'text-gray-600'
     },
-    processing: {
+    'ready-to-deliver': {
       icon: Package,
-      label: 'Processing',
-      bgColor: 'bg-gray-800',
-      textColor: 'text-white',
-      iconColor: 'text-white'
+      label: 'Ready to Deliver',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
     },
-    shipped: {
+    'on-delivery': {
       icon: Truck,
-      label: 'Shipped',
-      bgColor: 'bg-gray-600',
-      textColor: 'text-white',
-      iconColor: 'text-white'
+      label: 'On Delivery',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
     },
     delivered: {
       icon: CheckCircle,
       label: 'Delivered',
-      bgColor: 'bg-black',
-      textColor: 'text-white',
-      iconColor: 'text-white'
-    },
-    cancelled: {
-      icon: XCircle,
-      label: 'Cancelled',
-      bgColor: 'bg-gray-300',
+      bgColor: 'bg-gray-100',
       textColor: 'text-gray-800',
       iconColor: 'text-gray-600'
     }
@@ -348,7 +219,7 @@ export const OrderManagement: React.FC = () => {
       const currentOrder = orders[randomOrderIndex];
       
       if (currentOrder && Math.random() > 0.8) { // 20% chance to update
-        const possibleStatuses: OrderStatus[] = ['processing', 'shipped', 'delivered'];
+        const possibleStatuses: OrderStatus[] = ['ready-to-deliver', 'on-delivery', 'delivered'];
         const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
         
         if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
@@ -432,15 +303,12 @@ export const OrderManagement: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-
 const getStatusCounts = (): Record<OrderStatus, number> & { total: number } => {
   const initialCounts: Record<OrderStatus, number> = {
     pending: 0,
-    processing: 0,
-    shipped: 0,
+    'ready-to-deliver': 0,
+    'on-delivery': 0,
     delivered: 0,
-    cancelled: 0,
   };
 
   const counts = orders.reduce((acc, order) => {
@@ -637,7 +505,7 @@ const statusCounts = getStatusCounts();
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Total Orders</p>
             <p className="text-2xl font-bold text-black">{statusCounts.total || 0}</p>
@@ -647,20 +515,16 @@ const statusCounts = getStatusCounts();
             <p className="text-2xl font-bold text-gray-600">{statusCounts.pending || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Processing</p>
-            <p className="text-2xl font-bold text-black">{statusCounts.processing || 0}</p>
+            <p className="text-sm text-gray-600">Ready to Deliver</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts['ready-to-deliver'] || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Shipped</p>
-            <p className="text-2xl font-bold text-gray-700">{statusCounts.shipped || 0}</p>
+            <p className="text-sm text-gray-600">On Delivery</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts['on-delivery'] || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Delivered</p>
-            <p className="text-2xl font-bold text-black">{statusCounts.delivered || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Cancelled</p>
-            <p className="text-2xl font-bold text-gray-500">{statusCounts.cancelled || 0}</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts.delivered || 0}</p>
           </div>
         </div>
 
@@ -689,10 +553,9 @@ const statusCounts = getStatusCounts();
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
+                <option value="ready-to-deliver">Ready to Deliver</option>
+                <option value="on-delivery">On Delivery</option>
                 <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </div>
