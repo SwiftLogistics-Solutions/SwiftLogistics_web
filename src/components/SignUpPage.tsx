@@ -94,7 +94,8 @@ export const SignUpPage: React.FC<SignUpPageProps> = ({ onSignUp, onSwitchToLogi
           localStorage.setItem('userData', JSON.stringify(data.user));
         }
         
-        onSignUp(formData.email, formData.password, formData.name);
+        // Redirect to login page after successful signup
+        onSwitchToLogin();
       } else {
         // Handle signup errors
         if (data.errors && Array.isArray(data.errors)) {

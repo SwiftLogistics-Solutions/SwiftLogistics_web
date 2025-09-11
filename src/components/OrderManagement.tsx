@@ -161,8 +161,20 @@ export const OrderManagement: React.FC = () => {
       const data = await response.json();
       console.log('Orders API response:', data);
       
+      // Handle different possible response structures
+      let ordersToProcess = [];
+      if (data.orders) {
+        if (Array.isArray(data.orders)) {
+          // If orders is an array
+          ordersToProcess = data.orders;
+        } else {
+          // If orders is a single object, wrap it in an array
+          ordersToProcess = [data.orders];
+        }
+      }
+      
       // Transform API response to match our Order interface
-      const transformedOrders = data.orders ? data.orders.map((apiOrder: any) => {
+      const transformedOrders = ordersToProcess.map((apiOrder: any) => {
         // Handle the nested items structure: items.item[]
         let orderItems = [];
         if (apiOrder.items) {
@@ -178,6 +190,8 @@ export const OrderManagement: React.FC = () => {
         return {
           id: apiOrder.orderID || apiOrder._id || apiOrder.id,
           orderNumber: apiOrder.orderID || `SL-${apiOrder._id}`,
+          customerName: apiOrder.customerName || 'Customer',
+          customerEmail: apiOrder.customerEmail || '',
           items: orderItems.map((item: any) => ({
             id: item.product_id || item.id,
             name: item.name || 'Unknown Product',
@@ -189,9 +203,10 @@ export const OrderManagement: React.FC = () => {
           orderDate: apiOrder.created_at || apiOrder.orderDate || apiOrder.createdAt || new Date().toISOString(),
           estimatedDelivery: apiOrder.estimatedDelivery || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
           totalAmount: apiOrder.totalAmount || 0,
+          shippingAddress: apiOrder.shippingAddress || 'No address provided',
           trackingNumber: apiOrder.trackingNumber || undefined
         };
-      }) : [];
+      });
       
       setOrders(transformedOrders);
       
