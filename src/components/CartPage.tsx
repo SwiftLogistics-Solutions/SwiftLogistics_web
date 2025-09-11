@@ -52,6 +52,7 @@ function CartPage() {
                     orderID: orderID,
                     customer_id: customerId,
                     totalAmount: total,
+                    itemsCount: cartItems.length,
                     priority: isHighPriority ? "high" : "low",
                     items: cartItems.map(item => ({
                         product_id: item.id,
