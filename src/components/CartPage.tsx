@@ -77,6 +77,28 @@ function CartPage() {
                     const result = await response.json();
                     console.log('Order created successfully:', result);
                     
+                    // Decrement product stock for each ordered item
+                    for (const item of cartItems) {
+                        try {
+                            const decrementResponse = await fetch('/product/decrement-count', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                },
+                                body: JSON.stringify({
+                                    productId: item.id,
+                                    quantity: item.quantity
+                                })
+                            });
+                            
+                            if (!decrementResponse.ok) {
+                                console.error(`Failed to decrement stock for product ${item.id}`);
+                            }
+                        } catch (error) {
+                            console.error(`Error decrementing stock for product ${item.id}:`, error);
+                        }
+                    }
+                    
                     // Clear cart after successful order
                     clearCart();
                     
