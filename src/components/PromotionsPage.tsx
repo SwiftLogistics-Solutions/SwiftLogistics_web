@@ -39,111 +39,72 @@ interface Promotion {
   createdDate: string;
 }
 
-// Mock Data
-const mockPromotions: Promotion[] = [
-  {
-    id: '1',
-    name: 'New Year Sale',
-    description: 'Start the year with amazing savings on premium bags',
-    type: 'percentage',
-    value: 25,
-    code: 'NEWYEAR25',
-    startDate: '2025-01-01T00:00:00Z',
-    endDate: '2025-01-31T23:59:59Z',
-    status: 'active',
-    usageCount: 156,
-    usageLimit: 500,
-    minimumOrderAmount: 100,
-    applicableProducts: ['Premium Business Briefcase', 'Executive Briefcase Set'],
-    createdDate: '2024-12-15T10:00:00Z'
-  },
-  {
-    id: '2',
-    name: 'Student Discount',
-    description: 'Special discount for students on backpacks and laptop bags',
-    type: 'percentage',
-    value: 15,
-    code: 'STUDENT15',
-    startDate: '2025-01-01T00:00:00Z',
-    endDate: '2025-12-31T23:59:59Z',
-    status: 'active',
-    usageCount: 89,
-    usageLimit: 1000,
-    minimumOrderAmount: 50,
-    applicableProducts: ['Travel Backpack Pro', 'Leather Laptop Bag'],
-    createdDate: '2024-12-01T09:00:00Z'
-  },
-  {
-    id: '3',
-    name: 'Free Shipping Weekend',
-    description: 'Free shipping on all orders this weekend',
-    type: 'free_shipping',
-    value: 0,
-    code: 'FREESHIP',
-    startDate: '2025-01-11T00:00:00Z',
-    endDate: '2025-01-12T23:59:59Z',
-    status: 'scheduled',
-    usageCount: 0,
-    usageLimit: 200,
-    minimumOrderAmount: 75,
-    applicableProducts: ['All Products'],
-    createdDate: '2025-01-05T14:30:00Z'
-  },
-  {
-    id: '4',
-    name: 'Buy 2 Get 1 Free',
-    description: 'Buy any 2 sports bags and get the third one free',
-    type: 'buy_one_get_one',
-    value: 100,
-    code: 'BUY2GET1',
-    startDate: '2025-01-15T00:00:00Z',
-    endDate: '2025-01-22T23:59:59Z',
-    status: 'scheduled',
-    usageCount: 0,
-    usageLimit: 100,
-    minimumOrderAmount: 150,
-    applicableProducts: ['Sports Duffel Bag', 'Gym Equipment Bag'],
-    createdDate: '2025-01-08T11:15:00Z'
-  },
-  {
-    id: '5',
-    name: 'Holiday Special',
-    description: 'Holiday season special discount on designer bags',
-    type: 'fixed_amount',
-    value: 50,
-    code: 'HOLIDAY50',
-    startDate: '2024-12-01T00:00:00Z',
-    endDate: '2024-12-31T23:59:59Z',
-    status: 'expired',
-    usageCount: 234,
-    usageLimit: 300,
-    minimumOrderAmount: 200,
-    applicableProducts: ['Designer Handbag Collection'],
-    createdDate: '2024-11-15T16:45:00Z'
-  },
-  {
-    id: '6',
-    name: 'Flash Sale',
-    description: '48-hour flash sale on selected items',
-    type: 'percentage',
-    value: 30,
-    code: 'FLASH30',
-    startDate: '2025-01-20T00:00:00Z',
-    endDate: '2025-01-22T00:00:00Z',
-    status: 'paused',
-    usageCount: 45,
-    usageLimit: 150,
-    minimumOrderAmount: 80,
-    applicableProducts: ['Travel Backpack Pro', 'Sports Duffel Bag'],
-    createdDate: '2025-01-18T08:20:00Z'
-  }
-];
-
 export const PromotionsPage: React.FC = () => {
-  const [promotions, setPromotions] = useState<Promotion[]>(mockPromotions);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<PromotionStatus | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<PromotionType | 'all'>('all');
+
+  // Fetch offers from API
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await fetch('/product/offers', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Transform API data to match our Promotion interface if needed
+        const rawData = Array.isArray(data) ? data : (data.offers || data.data || []);
+        
+        // Validate and transform each promotion object
+        const transformedData = rawData.map((item: any, index: number) => ({
+          id: item.id || `promotion-${index}`,
+          name: item.name || item.title || 'Unnamed Promotion',
+          description: item.description || 'No description available',
+          type: (item.type && ['percentage', 'fixed_amount', 'buy_one_get_one', 'free_shipping'].includes(item.type)) 
+                ? item.type : 'percentage',
+          value: typeof item.value === 'number' ? item.value : (item.discount || 0),
+          code: item.code || item.couponCode || `CODE${index}`,
+          startDate: item.startDate || item.start_date || new Date().toISOString(),
+          endDate: item.endDate || item.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          status: (item.status && ['active', 'expired'].includes(item.status)) 
+                  ? item.status : 'active',
+          usageCount: typeof item.usageCount === 'number' ? item.usageCount : (item.usage_count || 0),
+          usageLimit: typeof item.usageLimit === 'number' ? item.usageLimit : (item.usage_limit || undefined),
+          minimumOrderAmount: typeof item.minimumOrderAmount === 'number' ? item.minimumOrderAmount : (item.minimum_order || undefined),
+          applicableProducts: Array.isArray(item.applicableProducts) ? item.applicableProducts : 
+                             (Array.isArray(item.applicable_products) ? item.applicable_products : ['All Products']),
+          createdDate: item.createdDate || item.created_date || new Date().toISOString()
+        }));
+        
+        setPromotions(transformedData);
+        
+      } catch (error) {
+        console.error('Error fetching offers:', error);
+        setError('Failed to load offers. Please try again later.');
+        // Fallback to mock data if API fails
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOffers();
+  }, []);
 
   // Status configuration
   const statusConfig = {
@@ -225,15 +186,15 @@ export const PromotionsPage: React.FC = () => {
   const getPromotionValue = (promotion: Promotion) => {
     switch (promotion.type) {
       case 'percentage':
-        return `${promotion.value}% OFF`;
+        return `${promotion.value || 0}% OFF`;
       case 'fixed_amount':
-        return `${formatCurrency(promotion.value)} OFF`;
+        return `${formatCurrency(promotion.value || 0)} OFF`;
       case 'buy_one_get_one':
         return 'BUY 2 GET 1 FREE';
       case 'free_shipping':
         return 'FREE SHIPPING';
       default:
-        return '';
+        return `${promotion.value || 0}% OFF`; // Default to percentage format
     }
   };
 
@@ -271,22 +232,22 @@ export const PromotionsPage: React.FC = () => {
   const statusCounts = getStatusCounts();
 
   // Status Badge Component
-  const StatusBadge: React.FC<{ status: PromotionStatus }> = ({ status }) => {
-    const config = statusConfig[status];
-    const Icon = config.icon;
+  // const StatusBadge: React.FC<{ status: PromotionStatus }> = ({ status }) => {
+  //   const config = statusConfig[status] || statusConfig['active']; // Fallback to active if status is unknown
+  //   const Icon = config.icon;
 
-    return (
-      <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 ${config.bgColor} ${config.textColor}`}>
-        <Icon size={14} />
-        <span className="text-sm font-medium">{config.label}</span>
-      </div>
-    );
-  };
+  //   return (
+  //     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 ${config.bgColor} ${config.textColor}`}>
+  //       <Icon size={14} />
+  //       <span className="text-sm font-medium">{config.label}</span>
+  //     </div>
+  //   );
+  // };
 
   // Promotion Card Component
   const PromotionCard: React.FC<{ promotion: Promotion }> = ({ promotion }) => {
     const daysRemaining = getDaysRemaining(promotion.endDate);
-    const typeConfig_ = typeConfig[promotion.type];
+    const typeConfig_ = typeConfig[promotion.type] || typeConfig['percentage']; // Fallback to percentage if type is unknown
     const TypeIcon = typeConfig_.icon;
 
     return (
@@ -304,7 +265,7 @@ export const PromotionsPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <StatusBadge status={promotion.status} />
+          {/* <StatusBadge status={promotion.status} /> */}
         </div>
 
         {/* Promotion Value */}
@@ -329,20 +290,20 @@ export const PromotionsPage: React.FC = () => {
               <p className="text-sm">{formatDate(promotion.endDate)}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-gray-600">
+          {/* <div className="flex items-center gap-2 text-gray-600">
             <Users size={16} />
             <div>
               <p className="text-sm font-medium">Usage</p>
               <p className="text-sm">{promotion.usageCount} / {promotion.usageLimit || '∞'}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
+          </div> */}
+          {/* <div className="flex items-center gap-2 text-gray-600">
             <DollarSign size={16} />
             <div>
               <p className="text-sm font-medium">Min. Order</p>
               <p className="text-sm">{promotion.minimumOrderAmount ? formatCurrency(promotion.minimumOrderAmount) : 'No minimum'}</p>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Time Remaining */}
@@ -358,7 +319,7 @@ export const PromotionsPage: React.FC = () => {
         )}
 
         {/* Applicable Products */}
-        <div className="mb-4">
+        {/* <div className="mb-4">
           <p className="text-sm font-medium text-gray-800 mb-2">Applicable Products:</p>
           <div className="flex flex-wrap gap-2">
             {promotion.applicableProducts.map((product, index) => (
@@ -370,10 +331,10 @@ export const PromotionsPage: React.FC = () => {
               </span>
             ))}
           </div>
-        </div>
+        </div> */}
 
         {/* Usage Progress */}
-        {promotion.usageLimit && (
+        {/* {promotion.usageLimit && (
           <div className="mb-4">
             <div className="flex justify-between items-center mb-1">
               <span className="text-sm font-medium text-gray-700">Usage Progress</span>
@@ -388,7 +349,8 @@ export const PromotionsPage: React.FC = () => {
               ></div>
             </div>
           </div>
-        )}
+        )
+        } */}
 
         {/* Actions */}
         {/* <div className="flex gap-2">
@@ -435,31 +397,31 @@ export const PromotionsPage: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          {/* <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Total Promotions</p>
             <p className="text-2xl font-bold text-black">{statusCounts.total || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+          </div> */}
+          {/* <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Active</p>
             <p className="text-2xl font-bold text-black">{statusCounts.active || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+          </div> */}
+          {/* <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Scheduled</p>
             <p className="text-2xl font-bold text-gray-600">{statusCounts.scheduled || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+          </div> */}
+          {/* <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Expired</p>
             <p className="text-2xl font-bold text-gray-400">{statusCounts.expired || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+          </div> */}
+          {/* <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Paused</p>
             <p className="text-2xl font-bold text-gray-500">{statusCounts.paused || 0}</p>
-          </div>
+          </div> */}
         </div>
 
         {/* Filters */}
-        <div className="bg-white p-6 rounded-lg border-2 border-gray-200 mb-6">
+        {/* <div className="bg-white p-6 rounded-lg border-2 border-gray-200 mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
@@ -506,11 +468,31 @@ export const PromotionsPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Promotions List */}
         <div className="space-y-6">
-          {filteredPromotions.length === 0 ? (
+          {loading ? (
+            <div className="bg-white p-12 rounded-lg border-2 border-gray-200 text-center">
+              <div className="flex items-center justify-center mb-4">
+                <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">Loading offers...</h3>
+              <p className="text-gray-500">Please wait while we fetch the latest promotions.</p>
+            </div>
+          ) : error ? (
+            <div className="bg-white p-12 rounded-lg border-2 border-red-200 text-center">
+              <Percent size={48} className="mx-auto text-red-400 mb-4" />
+              <h3 className="text-lg font-semibold text-red-600 mb-2">Error Loading Offers</h3>
+              <p className="text-red-500 mb-4">{error}</p>
+              <button 
+                onClick={() => window.location.reload()}
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : filteredPromotions.length === 0 ? (
             <div className="bg-white p-12 rounded-lg border-2 border-gray-200 text-center">
               <Percent size={48} className="mx-auto text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-600 mb-2">No promotions found</h3>

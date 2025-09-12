@@ -11,16 +11,71 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToSignUp 
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
     
-    // Simulate API call
-    setTimeout(() => {
-      onLogin(email, password);
+    try {
+      const response = await fetch('/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Validate that we have user data
+        if (!data.user) {
+          setError('Invalid response from server. Please try again.');
+          return;
+        }
+
+        // Check if user role is 'customer'
+        if (data.user.customClaims && data.user.customClaims.role !== 'customer') {
+          setError('Access denied. This portal is only for customers.');
+          return;
+        }
+        
+        // Validate that we have authentication token
+        const token = data.idToken || data.token;
+        if (!token) {
+          setError('Authentication failed. No token received.');
+          return;
+        }
+        
+        // Store the token and user data
+        localStorage.setItem('authToken', token);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        
+        // Only proceed to login if all validations pass
+        onLogin(email, password);
+      } else {
+        // Handle different types of API errors
+        if (response.status === 401) {
+          setError('Invalid email or password. Please try again.');
+        } else if (response.status === 403) {
+          setError('Access forbidden. Please contact support.');
+        } else if (response.status >= 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError(data.message || 'Login failed. Please check your credentials.');
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -39,6 +94,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToSignUp 
 
         {/* Login Form */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600 text-sm">{error}</p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-black mb-2">
@@ -87,22 +147,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToSignUp 
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 text-black focus:ring-black border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </label>
-              <button
-                type="button"
-                className="text-sm text-black hover:text-gray-700 transition-colors duration-200 font-medium"
-              >
-                Forgot password?
-              </button>
-            </div>
-
             <button
               type="submit"
               disabled={isLoading}
@@ -130,13 +174,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSwitchToSignUp 
               </button>
             </p>
           </div>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg border">
-          <p className="text-xs text-gray-600 text-center">
-            <strong>Demo:</strong> Use any email and password to sign in
-          </p>
         </div>
       </div>
     </div>

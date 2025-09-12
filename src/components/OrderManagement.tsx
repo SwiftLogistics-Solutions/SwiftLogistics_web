@@ -30,10 +30,10 @@ interface OrderItem {
 
 type OrderStatus = 
   | 'pending'
-  | 'processing' 
-  | 'shipped' 
-  | 'delivered' 
-  | 'cancelled';
+  | 'ready-to-deliver' 
+  | 'accepted'
+  | 'on-delivery' 
+  | 'delivered';
 
 interface Order {
   id: string;
@@ -57,134 +57,15 @@ interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
 }
 
-// Mock Data
-const mockOrders: Order[] = [
-  {
-    id: '1',
-    orderNumber: 'SL-2025-001',
-    customerName: 'Sarah Johnson',
-    customerEmail: 'sarah.johnson@email.com',
-    items: [
-      {
-        id: '1',
-        name: 'Premium Business Briefcase',
-        quantity: 1,
-        price: 299.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      },
-      {
-        id: '2',
-        name: 'Leather Laptop Bag',
-        quantity: 1,
-        price: 189.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'processing',
-    orderDate: '2025-01-09T10:30:00Z',
-    estimatedDelivery: '2025-01-15T00:00:00Z',
-    totalAmount: 489.98,
-    shippingAddress: '123 Business Ave, New York, NY 10001',
-    trackingNumber: 'SL2025001TRACK'
-  },
-  {
-    id: '2',
-    orderNumber: 'SL-2025-002',
-    customerName: 'Michael Chen',
-    customerEmail: 'michael.chen@email.com',
-    items: [
-      {
-        id: '3',
-        name: 'Travel Backpack Pro',
-        quantity: 2,
-        price: 149.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'shipped',
-    orderDate: '2025-01-08T14:15:00Z',
-    estimatedDelivery: '2025-01-12T00:00:00Z',
-    totalAmount: 299.98,
-    shippingAddress: '456 Adventure St, Los Angeles, CA 90210',
-    trackingNumber: 'SL2025002TRACK'
-  },
-  {
-    id: '3',
-    orderNumber: 'SL-2025-003',
-    customerName: 'Emma Williams',
-    customerEmail: 'emma.williams@email.com',
-    items: [
-      {
-        id: '4',
-        name: 'Designer Handbag Collection',
-        quantity: 1,
-        price: 399.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'delivered',
-    orderDate: '2025-01-05T09:00:00Z',
-    estimatedDelivery: '2025-01-10T00:00:00Z',
-    totalAmount: 399.99,
-    shippingAddress: '789 Fashion Blvd, Miami, FL 33101',
-    trackingNumber: 'SL2025003TRACK'
-  },
-  {
-    id: '4',
-    orderNumber: 'SL-2025-004',
-    customerName: 'James Rodriguez',
-    customerEmail: 'james.rodriguez@email.com',
-    items: [
-      {
-        id: '5',
-        name: 'Sports Duffel Bag',
-        quantity: 1,
-        price: 89.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      },
-      {
-        id: '6',
-        name: 'Gym Equipment Bag',
-        quantity: 1,
-        price: 69.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'pending',
-    orderDate: '2025-01-09T16:45:00Z',
-    estimatedDelivery: '2025-01-16T00:00:00Z',
-    totalAmount: 159.98,
-    shippingAddress: '321 Sports Center Dr, Chicago, IL 60601'
-  },
-  {
-    id: '5',
-    orderNumber: 'SL-2025-005',
-    customerName: 'Lisa Thompson',
-    customerEmail: 'lisa.thompson@email.com',
-    items: [
-      {
-        id: '7',
-        name: 'Executive Briefcase Set',
-        quantity: 1,
-        price: 599.99,
-        image: 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
-      }
-    ],
-    status: 'cancelled',
-    orderDate: '2025-01-07T11:20:00Z',
-    estimatedDelivery: '2025-01-14T00:00:00Z',
-    totalAmount: 599.99,
-    shippingAddress: '654 Executive Plaza, Boston, MA 02101'
-  }
-];
-
 export const OrderManagement: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>(mockOrders);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<OrderStatus | 'all'>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string>('');
 
   // Status configuration
   const statusConfig = {
@@ -195,31 +76,31 @@ export const OrderManagement: React.FC = () => {
       textColor: 'text-gray-800',
       iconColor: 'text-gray-600'
     },
-    processing: {
-      icon: Package,
-      label: 'Processing',
-      bgColor: 'bg-gray-800',
-      textColor: 'text-white',
-      iconColor: 'text-white'
+    accepted: {
+      icon: CheckCircle,
+      label: 'Accepted',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
     },
-    shipped: {
+    'ready-to-deliver': {
+      icon: Package,
+      label: 'Ready to Deliver',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
+    },
+    'on-delivery': {
       icon: Truck,
-      label: 'Shipped',
-      bgColor: 'bg-gray-600',
-      textColor: 'text-white',
-      iconColor: 'text-white'
+      label: 'On Delivery',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
     },
     delivered: {
       icon: CheckCircle,
       label: 'Delivered',
-      bgColor: 'bg-black',
-      textColor: 'text-white',
-      iconColor: 'text-white'
-    },
-    cancelled: {
-      icon: XCircle,
-      label: 'Cancelled',
-      bgColor: 'bg-gray-300',
+      bgColor: 'bg-gray-100',
       textColor: 'text-gray-800',
       iconColor: 'text-gray-600'
     }
@@ -239,61 +120,202 @@ export const OrderManagement: React.FC = () => {
     error: 'bg-gray-600 text-white border-gray-400'
   };
 
-  // Simulate real-time order status updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const randomOrderIndex = Math.floor(Math.random() * orders.length);
-      const currentOrder = orders[randomOrderIndex];
+  // Fetch orders from API
+  const fetchOrders = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
       
-      if (currentOrder && Math.random() > 0.8) { // 20% chance to update
-        const possibleStatuses: OrderStatus[] = ['processing', 'shipped', 'delivered'];
-        const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
-        
-        if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
-          const newStatus = possibleStatuses[currentStatusIndex + 1];
-          updateOrderStatus(currentOrder.id, newStatus);
+      // Get customer ID from localStorage
+      const userData = localStorage.getItem('userData');
+      const customerId = localStorage.getItem('customer_id');
+      
+      let customerID = customerId;
+      
+      // If no customer_id in localStorage, try to get it from userData
+      if (!customerID && userData) {
+        try {
+          const user = JSON.parse(userData);
+          customerID = user.customer_id || user.uid || user.id;
+        } catch (parseError) {
+          console.error('Error parsing user data:', parseError);
         }
       }
-    }, 8000); // Check every 8 seconds
+      
+      if (!customerID) {
+        throw new Error('Customer ID not found. Please log in again.');
+      }
+      
+      // console.log('Fetching orders for customer ID:', customerID);
+      
+      // Make API call to get orders
+      const response = await fetch(`/cms/getOrders/${customerID}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        }
+      });
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No orders found for this customer
+          setOrders([]);
+          return;
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log('Orders API response:', data);
+      
+      // Handle different possible response structures
+      let ordersToProcess = [];
+      if (data.orders) {
+        if (Array.isArray(data.orders)) {
+          // If orders is an array
+          ordersToProcess = data.orders;
+        } else {
+          // If orders is a single object, wrap it in an array
+          ordersToProcess = [data.orders];
+        }
+      }
+      
+      // Transform API response to match our Order interface
+      const transformedOrders = ordersToProcess.map((apiOrder: any) => {
+        // Handle the nested items structure: items.item[] or items[] or other formats
+        let orderItems = [];
+        
+        // console.log(`Processing order ${apiOrder.orderID}, items structure:`, apiOrder.items);
+        
+        if (apiOrder.items) {
+          if (Array.isArray(apiOrder.items)) {
+            // If items is already an array
+            orderItems = apiOrder.items;
+          } else if (apiOrder.items.item) {
+            // Check if items.item exists (regardless of type)
+            if (Array.isArray(apiOrder.items.item)) {
+              // If items.item is an array
+              orderItems = apiOrder.items.item;
+            } else {
+              // If items.item exists but is not an array, wrap it in an array
+              orderItems = [apiOrder.items.item];
+            }
+          } else {
+            // Handle other possible structures
+            
+            // Try to find arrays in the items object
+            if (typeof apiOrder.items === 'object') {
+              for (const [key, value] of Object.entries(apiOrder.items)) {
+                if (Array.isArray(value)) {
+                  orderItems = value;
+                  break;
+                } else if (value && typeof value === 'object') {
+                  // If value is an object, try to convert it to an array
+                  orderItems = [value];
+                  break;
+                }
+              }
+            }
+          }
+        } else {
+          console.log(`Order ${apiOrder.orderID}: No items property found`);
+        }
 
-    return () => clearInterval(interval);
-  }, [orders]);
-
-  useEffect(() => {
-    if (notifications.length > 0) {
-      setIsNotificationOpen(true);
-    }
-  }, [notifications]);
-
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: newStatus }
-          : order
-      )
-    );
-
-    // Create notification
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-      const newNotification: Notification = {
-        id: `${orderId}-${Date.now()}`,
-        orderId,
-        message: `Order ${order.orderNumber} status updated to ${newStatus.toUpperCase()}`,
-        timestamp: new Date().toISOString(),
-        type: newStatus === 'delivered' ? 'success' : 'info'
-      };
-
-      setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep only 5 latest
+        return {
+          id: apiOrder.orderID || apiOrder._id || apiOrder.id,
+          orderNumber: apiOrder.orderID || `SL-${apiOrder._id}`,
+          customerName: apiOrder.customerName || 'Customer',
+          customerEmail: apiOrder.customerEmail || '',
+          items: orderItems.map((item: any) => ({
+            id: item.product_id || item.id,
+            name: item.name || 'Unknown Product',
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            image: item.image || 'https://images.pexels.com/photos/1152077/pexels-photo-1152077.jpeg?auto=compress&cs=tinysrgb&w=400'
+          })),
+          status: apiOrder.status || 'pending',
+          orderDate: apiOrder.created_at || apiOrder.orderDate || apiOrder.createdAt || new Date().toISOString(),
+          estimatedDelivery: apiOrder.estimatedDelivery || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          totalAmount: apiOrder.totalAmount || 0,
+          shippingAddress: apiOrder.shippingAddress || 'No address provided',
+          trackingNumber: apiOrder.trackingNumber || undefined
+        };
+      });
+      
+      setOrders(transformedOrders);
+      
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load orders');
+      // Fallback to empty orders array instead of mock data
+      setOrders([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleRefresh = () => {
+  // Initial load
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  // Simulate real-time order status updates (only if we have orders)
+  // useEffect(() => {
+  //   if (orders.length === 0) return;
+    
+  //   const interval = setInterval(() => {
+  //     const randomOrderIndex = Math.floor(Math.random() * orders.length);
+  //     const currentOrder = orders[randomOrderIndex];
+      
+  //     if (currentOrder && Math.random() > 0.8) { // 20% chance to update
+  //       const possibleStatuses: OrderStatus[] = ['accepted', 'ready-to-deliver', 'on-delivery', 'delivered'];
+  //       const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
+        
+  //       if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
+  //         const newStatus = possibleStatuses[currentStatusIndex + 1];
+  //         updateOrderStatus(currentOrder.id, newStatus);
+  //       }
+  //     }
+  //   }, 8000); // Check every 8 seconds
+
+  //   return () => clearInterval(interval);
+  // }, [orders]);
+
+  // useEffect(() => {
+  //   if (notifications.length > 0) {
+  //     setIsNotificationOpen(true);
+  //   }
+  // }, [notifications]);
+
+  // const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
+  //   setOrders(prevOrders => 
+  //     prevOrders.map(order => 
+  //       order.id === orderId 
+  //         ? { ...order, status: newStatus }
+  //         : order
+  //     )
+  //   );
+
+  //   // Create notification
+  //   const order = orders.find(o => o.id === orderId);
+  //   if (order) {
+  //     const newNotification: Notification = {
+  //       id: `${orderId}-${Date.now()}`,
+  //       orderId,
+  //       message: `Order ${order.orderNumber} status updated to ${newStatus.toUpperCase()}`,
+  //       timestamp: new Date().toISOString(),
+  //       type: newStatus === 'delivered' ? 'success' : 'info'
+  //     };
+
+  //     setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep only 5 latest
+  //   }
+  // };
+
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-    }, 1000);
+    await fetchOrders();
+    setIsRefreshing(false);
   };
 
   const dismissNotification = (notificationId: string) => {
@@ -324,22 +346,27 @@ export const OrderManagement: React.FC = () => {
     }).format(amount);
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  const filteredOrders = orders
+    .filter(order => {
+      const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by order date (newest first)
+      const dateA = new Date(a.orderDate);
+      const dateB = new Date(b.orderDate);
+      return dateB.getTime() - dateA.getTime();
+    });
 
 const getStatusCounts = (): Record<OrderStatus, number> & { total: number } => {
   const initialCounts: Record<OrderStatus, number> = {
     pending: 0,
-    processing: 0,
-    shipped: 0,
+    'ready-to-deliver': 0,
+    accepted: 0,
+    'on-delivery': 0,
     delivered: 0,
-    cancelled: 0,
   };
 
   const counts = orders.reduce((acc, order) => {
@@ -380,7 +407,7 @@ const statusCounts = getStatusCounts();
               <Hash size={16} className="text-gray-600" />
               <h3 className="text-lg font-bold text-black">{order.orderNumber}</h3>
             </div>
-            <p className="text-gray-600">{order.customerName}</p>
+            {/* <p className="text-gray-600">{order.customerName}</p> */}
           </div>
           <OrderStatusBadge status={order.status} />
         </div>
@@ -412,14 +439,14 @@ const statusCounts = getStatusCounts();
             <Calendar size={16} />
             <span className="text-sm">Ordered: {formatDate(order.orderDate)}</span>
           </div>
-          <div className="flex items-center gap-2 text-gray-600">
+          {/* <div className="flex items-center gap-2 text-gray-600">
             <Calendar size={16} />
             <span className="text-sm">Est. Delivery: {formatDate(order.estimatedDelivery)}</span>
-          </div>
-          <div className="flex items-center gap-2 text-gray-600">
+          </div> */}
+          {/* <div className="flex items-center gap-2 text-gray-600">
             <MapPin size={16} />
             <span className="text-sm">{order.shippingAddress}</span>
-          </div>
+          </div> */}
           <div className="flex items-center gap-2 text-black">
             <DollarSign size={16} />
             <span className="text-sm font-semibold">Total: {formatCurrency(order.totalAmount)}</span>
@@ -546,20 +573,20 @@ const statusCounts = getStatusCounts();
             <p className="text-2xl font-bold text-gray-600">{statusCounts.pending || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Processing</p>
-            <p className="text-2xl font-bold text-black">{statusCounts.processing || 0}</p>
+            <p className="text-sm text-gray-600">Ready to Deliver</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts['ready-to-deliver'] || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Shipped</p>
-            <p className="text-2xl font-bold text-gray-700">{statusCounts.shipped || 0}</p>
+            <p className="text-sm text-gray-600">Accepted</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts.accepted || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">On Delivery</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts['on-delivery'] || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Delivered</p>
-            <p className="text-2xl font-bold text-black">{statusCounts.delivered || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Cancelled</p>
-            <p className="text-2xl font-bold text-gray-500">{statusCounts.cancelled || 0}</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts.delivered || 0}</p>
           </div>
         </div>
 
@@ -588,10 +615,10 @@ const statusCounts = getStatusCounts();
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
+                <option value="accepted">Accepted</option>
+                <option value="ready-to-deliver">Ready to Deliver</option>
+                <option value="on-delivery">On Delivery</option>
                 <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </div>
@@ -599,11 +626,36 @@ const statusCounts = getStatusCounts();
 
         {/* Orders List */}
         <div className="space-y-6">
-          {filteredOrders.length === 0 ? (
+          {isLoading ? (
+            <div className="bg-white p-12 rounded-lg border-2 border-gray-200 text-center">
+              <RefreshCw size={48} className="mx-auto text-gray-400 mb-4 animate-spin" />
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">Loading orders...</h3>
+              <p className="text-gray-500">Please wait while we fetch your orders.</p>
+            </div>
+          ) : error ? (
+            <div className="bg-white p-12 rounded-lg border-2 border-red-200 text-center">
+              <AlertCircle size={48} className="mx-auto text-red-400 mb-4" />
+              <h3 className="text-lg font-semibold text-red-600 mb-2">Error loading orders</h3>
+              <p className="text-red-500 mb-4">{error}</p>
+              <button
+                onClick={handleRefresh}
+                className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : filteredOrders.length === 0 ? (
             <div className="bg-white p-12 rounded-lg border-2 border-gray-200 text-center">
               <Package size={48} className="mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">No orders found</h3>
-              <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                {orders.length === 0 ? 'No orders yet' : 'No orders found'}
+              </h3>
+              <p className="text-gray-500">
+                {orders.length === 0 
+                  ? 'Start shopping to see your orders here!' 
+                  : 'Try adjusting your search or filter criteria.'
+                }
+              </p>
             </div>
           ) : (
             filteredOrders.map((order) => (
