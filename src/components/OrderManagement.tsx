@@ -30,8 +30,8 @@ interface OrderItem {
 
 type OrderStatus = 
   | 'pending'
-  | 'accepted'
   | 'ready-to-deliver' 
+  | 'accepted'
   | 'on-delivery' 
   | 'delivered';
 
@@ -363,8 +363,8 @@ export const OrderManagement: React.FC = () => {
 const getStatusCounts = (): Record<OrderStatus, number> & { total: number } => {
   const initialCounts: Record<OrderStatus, number> = {
     pending: 0,
-    accepted: 0,
     'ready-to-deliver': 0,
+    accepted: 0,
     'on-delivery': 0,
     delivered: 0,
   };
@@ -573,12 +573,12 @@ const statusCounts = getStatusCounts();
             <p className="text-2xl font-bold text-gray-600">{statusCounts.pending || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
-            <p className="text-sm text-gray-600">Accepted</p>
-            <p className="text-2xl font-bold text-gray-600">{statusCounts.accepted || 0}</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Ready to Deliver</p>
             <p className="text-2xl font-bold text-gray-600">{statusCounts['ready-to-deliver'] || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Accepted</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts.accepted || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">On Delivery</p>
