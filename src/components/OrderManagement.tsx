@@ -146,7 +146,7 @@ export const OrderManagement: React.FC = () => {
         throw new Error('Customer ID not found. Please log in again.');
       }
       
-      console.log('Fetching orders for customer ID:', customerID);
+      // console.log('Fetching orders for customer ID:', customerID);
       
       // Make API call to get orders
       const response = await fetch(`/cms/getOrders/${customerID}`, {
@@ -183,22 +183,49 @@ export const OrderManagement: React.FC = () => {
       
       // Transform API response to match our Order interface
       const transformedOrders = ordersToProcess.map((apiOrder: any) => {
-        // Handle the nested items structure: items.item[]
+        // Handle the nested items structure: items.item[] or items[] or other formats
         let orderItems = [];
+        
+        // console.log(`Processing order ${apiOrder.orderID}, items structure:`, apiOrder.items);
+        
         if (apiOrder.items) {
           if (Array.isArray(apiOrder.items)) {
             // If items is already an array
             orderItems = apiOrder.items;
-          } else if (apiOrder.items.item && Array.isArray(apiOrder.items.item)) {
-            // If items has nested item array (as in your API response)
-            orderItems = apiOrder.items.item;
+          } else if (apiOrder.items.item) {
+            // Check if items.item exists (regardless of type)
+            if (Array.isArray(apiOrder.items.item)) {
+              // If items.item is an array
+              orderItems = apiOrder.items.item;
+            } else {
+              // If items.item exists but is not an array, wrap it in an array
+              orderItems = [apiOrder.items.item];
+            }
+          } else {
+            // Handle other possible structures
+            
+            // Try to find arrays in the items object
+            if (typeof apiOrder.items === 'object') {
+              for (const [key, value] of Object.entries(apiOrder.items)) {
+                if (Array.isArray(value)) {
+                  orderItems = value;
+                  break;
+                } else if (value && typeof value === 'object') {
+                  // If value is an object, try to convert it to an array
+                  orderItems = [value];
+                  break;
+                }
+              }
+            }
           }
+        } else {
+          console.log(`Order ${apiOrder.orderID}: No items property found`);
         }
 
         return {
           id: apiOrder.orderID || apiOrder._id || apiOrder.id,
           orderNumber: apiOrder.orderID || `SL-${apiOrder._id}`,
-          // customerName: apiOrder.customerName || 'Customer',
+          customerName: apiOrder.customerName || 'Customer',
           customerEmail: apiOrder.customerEmail || '',
           items: orderItems.map((item: any) => ({
             id: item.product_id || item.id,
@@ -319,12 +346,19 @@ export const OrderManagement: React.FC = () => {
     }).format(amount);
   };
 
-  const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredOrders = orders
+    .filter(order => {
+      const matchesSearch = order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           order.customerName.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by order date (newest first)
+      const dateA = new Date(a.orderDate);
+      const dateB = new Date(b.orderDate);
+      return dateB.getTime() - dateA.getTime();
+    });
 
 const getStatusCounts = (): Record<OrderStatus, number> & { total: number } => {
   const initialCounts: Record<OrderStatus, number> = {
