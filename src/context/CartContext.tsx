@@ -116,6 +116,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
           productId: item.id,
           quantity: item.quantity,
           price: item.price, // This already contains the discounted price
+          image: item.image,
           originalPrice: item.originalPrice,
           hasDiscount: item.hasDiscount
         })),

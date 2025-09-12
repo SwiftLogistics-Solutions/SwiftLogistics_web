@@ -58,11 +58,12 @@ function CartPage() {
                         product_id: item.id,
                         name: item.name,
                         quantity: item.quantity,
+                        image: item.image,
                         price: item.price
                     }))
                 };
 
-                console.log('Sending order to API:', orderPayload);
+                // console.log('Sending order to API:', orderPayload);
 
                 // Call the new order API
                 const response = await fetch('/neworder', {
@@ -76,7 +77,7 @@ function CartPage() {
 
                 if (response.ok) {
                     const result = await response.json();
-                    console.log('Order created successfully:', result);
+                    // console.log('Order created successfully:', result);
                     
                     // Decrement product stock for each ordered item
                     for (const item of cartItems) {
@@ -123,7 +124,7 @@ const handleshopping = async () => {
 
             // Simulate processing time before connecting to your order page
             setTimeout(() => {
-                console.log('Connecting to order page...');
+                // console.log('Connecting to order page...');
                 setIsLoading(false);
                 // Navigate to order management page
                 navigate('/dashboard');
