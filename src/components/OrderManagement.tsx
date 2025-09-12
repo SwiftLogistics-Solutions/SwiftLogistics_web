@@ -198,7 +198,7 @@ export const OrderManagement: React.FC = () => {
         return {
           id: apiOrder.orderID || apiOrder._id || apiOrder.id,
           orderNumber: apiOrder.orderID || `SL-${apiOrder._id}`,
-          customerName: apiOrder.customerName || 'Customer',
+          // customerName: apiOrder.customerName || 'Customer',
           customerEmail: apiOrder.customerEmail || '',
           items: orderItems.map((item: any) => ({
             id: item.product_id || item.id,
@@ -234,56 +234,56 @@ export const OrderManagement: React.FC = () => {
   }, []);
 
   // Simulate real-time order status updates (only if we have orders)
-  useEffect(() => {
-    if (orders.length === 0) return;
+  // useEffect(() => {
+  //   if (orders.length === 0) return;
     
-    const interval = setInterval(() => {
-      const randomOrderIndex = Math.floor(Math.random() * orders.length);
-      const currentOrder = orders[randomOrderIndex];
+  //   const interval = setInterval(() => {
+  //     const randomOrderIndex = Math.floor(Math.random() * orders.length);
+  //     const currentOrder = orders[randomOrderIndex];
       
-      if (currentOrder && Math.random() > 0.8) { // 20% chance to update
-        const possibleStatuses: OrderStatus[] = ['accepted', 'ready-to-deliver', 'on-delivery', 'delivered'];
-        const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
+  //     if (currentOrder && Math.random() > 0.8) { // 20% chance to update
+  //       const possibleStatuses: OrderStatus[] = ['accepted', 'ready-to-deliver', 'on-delivery', 'delivered'];
+  //       const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
         
-        if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
-          const newStatus = possibleStatuses[currentStatusIndex + 1];
-          updateOrderStatus(currentOrder.id, newStatus);
-        }
-      }
-    }, 8000); // Check every 8 seconds
+  //       if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
+  //         const newStatus = possibleStatuses[currentStatusIndex + 1];
+  //         updateOrderStatus(currentOrder.id, newStatus);
+  //       }
+  //     }
+  //   }, 8000); // Check every 8 seconds
 
-    return () => clearInterval(interval);
-  }, [orders]);
+  //   return () => clearInterval(interval);
+  // }, [orders]);
 
-  useEffect(() => {
-    if (notifications.length > 0) {
-      setIsNotificationOpen(true);
-    }
-  }, [notifications]);
+  // useEffect(() => {
+  //   if (notifications.length > 0) {
+  //     setIsNotificationOpen(true);
+  //   }
+  // }, [notifications]);
 
-  const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
-    setOrders(prevOrders => 
-      prevOrders.map(order => 
-        order.id === orderId 
-          ? { ...order, status: newStatus }
-          : order
-      )
-    );
+  // const updateOrderStatus = (orderId: string, newStatus: OrderStatus) => {
+  //   setOrders(prevOrders => 
+  //     prevOrders.map(order => 
+  //       order.id === orderId 
+  //         ? { ...order, status: newStatus }
+  //         : order
+  //     )
+  //   );
 
-    // Create notification
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-      const newNotification: Notification = {
-        id: `${orderId}-${Date.now()}`,
-        orderId,
-        message: `Order ${order.orderNumber} status updated to ${newStatus.toUpperCase()}`,
-        timestamp: new Date().toISOString(),
-        type: newStatus === 'delivered' ? 'success' : 'info'
-      };
+  //   // Create notification
+  //   const order = orders.find(o => o.id === orderId);
+  //   if (order) {
+  //     const newNotification: Notification = {
+  //       id: `${orderId}-${Date.now()}`,
+  //       orderId,
+  //       message: `Order ${order.orderNumber} status updated to ${newStatus.toUpperCase()}`,
+  //       timestamp: new Date().toISOString(),
+  //       type: newStatus === 'delivered' ? 'success' : 'info'
+  //     };
 
-      setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep only 5 latest
-    }
-  };
+  //     setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep only 5 latest
+  //   }
+  // };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -373,7 +373,7 @@ const statusCounts = getStatusCounts();
               <Hash size={16} className="text-gray-600" />
               <h3 className="text-lg font-bold text-black">{order.orderNumber}</h3>
             </div>
-            <p className="text-gray-600">{order.customerName}</p>
+            {/* <p className="text-gray-600">{order.customerName}</p> */}
           </div>
           <OrderStatusBadge status={order.status} />
         </div>
