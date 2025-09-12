@@ -30,6 +30,7 @@ interface OrderItem {
 
 type OrderStatus = 
   | 'pending'
+  | 'accepted'
   | 'ready-to-deliver' 
   | 'on-delivery' 
   | 'delivered';
@@ -71,6 +72,13 @@ export const OrderManagement: React.FC = () => {
     pending: {
       icon: Clock,
       label: 'Pending',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-800',
+      iconColor: 'text-gray-600'
+    },
+    accepted: {
+      icon: CheckCircle,
+      label: 'Accepted',
       bgColor: 'bg-gray-100',
       textColor: 'text-gray-800',
       iconColor: 'text-gray-600'
@@ -234,7 +242,7 @@ export const OrderManagement: React.FC = () => {
       const currentOrder = orders[randomOrderIndex];
       
       if (currentOrder && Math.random() > 0.8) { // 20% chance to update
-        const possibleStatuses: OrderStatus[] = ['ready-to-deliver', 'on-delivery', 'delivered'];
+        const possibleStatuses: OrderStatus[] = ['accepted', 'ready-to-deliver', 'on-delivery', 'delivered'];
         const currentStatusIndex = possibleStatuses.indexOf(currentOrder.status);
         
         if (currentStatusIndex < possibleStatuses.length - 1 && currentStatusIndex >= 0) {
@@ -321,6 +329,7 @@ export const OrderManagement: React.FC = () => {
 const getStatusCounts = (): Record<OrderStatus, number> & { total: number } => {
   const initialCounts: Record<OrderStatus, number> = {
     pending: 0,
+    accepted: 0,
     'ready-to-deliver': 0,
     'on-delivery': 0,
     delivered: 0,
@@ -520,7 +529,7 @@ const statusCounts = getStatusCounts();
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Total Orders</p>
             <p className="text-2xl font-bold text-black">{statusCounts.total || 0}</p>
@@ -528,6 +537,10 @@ const statusCounts = getStatusCounts();
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Pending</p>
             <p className="text-2xl font-bold text-gray-600">{statusCounts.pending || 0}</p>
+          </div>
+          <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+            <p className="text-sm text-gray-600">Accepted</p>
+            <p className="text-2xl font-bold text-gray-600">{statusCounts.accepted || 0}</p>
           </div>
           <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
             <p className="text-sm text-gray-600">Ready to Deliver</p>
@@ -568,6 +581,7 @@ const statusCounts = getStatusCounts();
               >
                 <option value="all">All Status</option>
                 <option value="pending">Pending</option>
+                <option value="accepted">Accepted</option>
                 <option value="ready-to-deliver">Ready to Deliver</option>
                 <option value="on-delivery">On Delivery</option>
                 <option value="delivered">Delivered</option>
