@@ -493,7 +493,7 @@ const statusCounts = getStatusCounts();
               
               {/* Notification System */}
               <div className="relative">
-                <button
+                {/* <button
                   onClick={() => setIsNotificationOpen(!isNotificationOpen)}
                   className="relative p-2 border-2 border-gray-300 rounded-lg bg-white hover:border-gray-400 transition-colors"
                 >
@@ -503,7 +503,7 @@ const statusCounts = getStatusCounts();
                       {notifications.length}
                     </span>
                   )}
-                </button>
+                </button> */}
 
                 {/* Notification Panel */}
                 {isNotificationOpen && (
